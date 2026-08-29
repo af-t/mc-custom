@@ -19,6 +19,7 @@ config
 config.guess
 config.h
 config.h.in
+!/cmake/config.h.in
 config.log
 config.status
 config.sub
@@ -57,3 +58,14 @@ tests/src/editor/test-data.txt
 src/vfs/extfs/helpers/usqfs
 tests/src/vfs/extfs/helpers-list/data/config.sh
 mc-version.h
+# CMake build directories
+/build*/
+/cmake-build-*/
+/_build/
+/build_cmake/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+_deps/
+

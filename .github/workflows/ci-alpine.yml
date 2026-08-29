@@ -19,11 +19,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          apk add autoconf automake build-base libtool pkgconf sudo
+          apk add build-base cmake ninja pkgconf samurai sudo
           apk add aspell-dev check-dev e2fsprogs-dev gettext-dev glib-dev gpm-dev libssh2-dev perl slang-dev
-
-      - name: Bootstrap build system
-        run: ./autogen.sh
 
       - name: Build default configuration
         run: |
@@ -31,20 +28,19 @@ jobs:
           chown -R test "$(pwd)"
 
           su - test -c ' \
-            ./configure \
-              --prefix="$(pwd)/install-prefix" \
-              --enable-mclib \
-              --enable-aspell \
-              --enable-werror \
+            cmake -S . -B build -G Ninja \
+              -DCMAKE_INSTALL_PREFIX="$(pwd)/install-prefix" \
+              -DMC_ENABLE_WERROR=ON \
+              -DMC_ENABLE_TESTS=ON \
               && \
             \
-            make -j$(nproc) && \
-            make check  && \
-            make install \
+            cmake --build build -j$(nproc) && \
+            ctest --test-dir build --output-on-failure  && \
+            cmake --install build \
           '
 
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: test-suite-logs-alpine
-          path: ./**/test-suite.log
+          path: build/**/Testing/**/*.log

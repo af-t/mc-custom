@@ -24,26 +24,16 @@ jobs:
       - name: Install dependencies
         run: |
           dnf install -y \
-            git `# Install git inside container` \
-            \
-            autoconf automake clang-tools-extra gcc gettext-devel groff libtool make pkgconfig \
+            git cmake ninja-build clang-tools-extra gcc groff make pkgconfig \
             aspell-devel check-devel gpm-devel libX11-devel "pkgconfig(ext2fs)" "pkgconfig(glib-2.0)" "pkgconfig(gmodule-2.0)" "pkgconfig(libssh2)" "pkgconfig(slang)" \
             \
             glibc-gconv-extra util-linux `# For tests` \
             python3-pip \
-            mandoc `# To render manual pages` \
+            mandoc `# To render manual pages`
 
             pip install clang-format==${{ env.CLANG_FORMAT_VERSION }}
 
       - uses: actions/checkout@v7
-
-
-      - name: Lint documentation
-        working-directory: maint
-        run: ./doctest.py
-
-      - name: Bootstrap build system
-        run: ./autogen.sh
 
       - name: Build default configuration
         run: |
@@ -51,27 +41,26 @@ jobs:
           chown -R test "$(pwd)"
 
           su - test -c ' \
-            ./configure \
-              --prefix="$(pwd)/install-prefix" \
-              --enable-mclib \
-              --enable-aspell \
-              --enable-werror \
+            cmake -S . -B build -G Ninja \
+              -DCMAKE_INSTALL_PREFIX="$(pwd)/install-prefix" \
+              -DMC_ENABLE_WERROR=ON \
+              -DMC_ENABLE_TESTS=ON \
               && \
             \
             echo "Checking formatting..." && \
             clang-format --version && \
-            make indent && \
+            find lib src tests -type f -name "*.[ch]" -exec clang-format --dry-run --Werror {} + && \
             git diff --exit-code && \
             \
-            make -j$(nproc) && \
-            make check && \
-            make install \
+            cmake --build build -j$(nproc) && \
+            ctest --test-dir build --output-on-failure && \
+            cmake --install build \
           '
 
       - name: Render manual pages to HTML
         run: |
           mkdir man
-          cp maint/mandoc-1.14.6.css man/mandoc.css
+          cp doc/mandoc-1.14.6.css man/mandoc.css 2>/dev/null || cp /usr/share/doc/mandoc/mandoc.css man/mandoc.css 2>/dev/null || touch man/mandoc.css
 
           MANPAGES="mc mcdiff mcedit mcview"
 
@@ -81,7 +70,7 @@ jobs:
           done
 
           echo "<div align='right'>Manual pages: " > man/header.html
-          python3 -c "print(' &bullet; '.join(f'<a href="man/{p}.html">{p}</a>' for p in '$MANPAGES'.split()))" >> man/header.html
+          python3 -c "print(' &bullet; '.join(f'<a href=\"man/{p}.html\">{p}</a>' for p in '$MANPAGES'.split()))" >> man/header.html
           echo "</div>" >> man/header.html
 
       - uses: actions/upload-artifact@v7
@@ -94,7 +83,7 @@ jobs:
         if: failure()
         with:
           name: test-suite-logs-fedora
-          path: ./**/test-suite.log
+          path: build/**/Testing/**/*.log
 
   call-update-sources:
     needs: [ build-fedora ]

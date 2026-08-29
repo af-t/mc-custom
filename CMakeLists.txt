@@ -84,7 +84,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
         -Wmissing-format-attribute -Wmissing-prototypes -Wpointer-arith
         -Wredundant-decls -Wshadow -Wstrict-prototypes -Wswitch-default
         -Wundef -Wunreachable-code -Wunused-result -Wwrite-strings
-        -Wno-cast-function-type -Wno-assign-enum)
+        -Wno-cast-function-type -Wno-assign-enum -Wno-unused-parameter -Wno-nonnull)
         check_c_compiler_flag(${_flag} _mc_flag_ok)
         if(_mc_flag_ok)
     set(MC_COMPILE_OPTIONS ${MC_COMPILE_OPTIONS} ${_flag})
@@ -332,13 +332,18 @@ endif()
 # targets; expose the off_t size for the SIZEOF_OFF_T macro.
 set(SIZEOF_OFF_T 0)
 set(SIZEOF_LONG 0)
+set(SIZEOF_UINTMAX_T 0)
 check_type_size("off_t" MC_SIZEOF_OFF_T)
 check_type_size("long" MC_SIZEOF_LONG)
+check_type_size("uintmax_t" MC_SIZEOF_UINTMAX_T)
 if(MC_SIZEOF_OFF_T)
     set(SIZEOF_OFF_T ${MC_SIZEOF_OFF_T})
 endif()
 if(MC_SIZEOF_LONG)
     set(SIZEOF_LONG ${MC_SIZEOF_LONG})
+endif()
+if(MC_SIZEOF_UINTMAX_T)
+    set(SIZEOF_UINTMAX_T ${MC_SIZEOF_UINTMAX_T})
 endif()
 
 set(HAVE_S_I_SOCK ${HAVE_SYS_SOCKET_H_H})
@@ -479,6 +484,17 @@ set(HAVE_STDCKDINT_H 0)
 check_include_file("stdckdint.h" _mc_stdckdint)
 if(_mc_stdckdint)
     set(HAVE_STDCKDINT_H 1)
+endif()
+
+# Check whether environ is declared (mirrors AC_CHECK_DECLS([environ]))
+set(HAVE_DECL_ENVIRON 0)
+check_c_source_compiles([=[
+#include <unistd.h>
+#include <stdlib.h>
+int main(void){ (void)environ; return 0; }
+]=] _mc_have_decl_environ)
+if(_mc_have_decl_environ)
+    set(HAVE_DECL_ENVIRON 1)
 endif()
 
 set(HAVE_G_UNIT_TESTS ${MC_ENABLE_TESTS})

@@ -22,29 +22,26 @@ jobs:
 
       - name: Install dependencies
         run: |
-          brew install autoconf automake gettext check libtool pkg-config
+          brew install cmake ninja pkg-config gettext check
           brew install aspell e2fsprogs glib libssh2 openssl s-lang
 
           # unzip is part of the base system
-
-      - name: Bootstrap build system
-        run: ./autogen.sh
 
       - name: Build default configuration
         run: |
           export CFLAGS="${{ inputs.CFLAGS }}"
 
-          ./configure \
-            --prefix="$(pwd)/install-prefix" \
-            --enable-mclib \
-            --enable-aspell=/opt/homebrew
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_INSTALL_PREFIX="$(pwd)/install-prefix" \
+            -DMC_ENABLE_WERROR=ON \
+            -DMC_ENABLE_TESTS=ON
 
-          make -j$(sysctl -n hw.logicalcpu)
-          make check
-          make install
+          cmake --build build -j$(sysctl -n hw.logicalcpu)
+          ctest --test-dir build --output-on-failure
+          cmake --install build
 
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: test-suite-logs-macos
-          path: ./**/test-suite.log
+          path: build/**/Testing/**/*.log

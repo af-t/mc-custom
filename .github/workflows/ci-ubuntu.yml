@@ -17,80 +17,55 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y autoconf autopoint check gettext libtool pkg-config
-          sudo apt-get install -y e2fslibs-dev libaspell-dev libglib2.0-dev libgpm-dev libncurses5-dev libslang2-dev libssh2-1-dev libx11-dev unzip
-
-      - name: Bootstrap build system
-        run: ./autogen.sh
-
-      - name: Build distribution archive
-        run: |
-          mkdir -p build-distrib && cd $_
-
-          ../configure
-
-          make dist-bzip2
+          sudo apt-get install -y cmake ninja-build pkg-config gettext check libglib2.0-dev
+          sudo apt-get install -y e2fslibs-dev libaspell-dev libgpm-dev libncurses5-dev libslang2-dev libssh2-1-dev libx11-dev unzip
 
       - name: Build full configuration
         run: |
-          tar -xjf $(ls build-distrib/mc-*.tar.bz2) --one-top-level=build-full
-          cd build-full
+          cmake -S . -B build-full \
+              -G Ninja \
+              -DCMAKE_INSTALL_PREFIX="$(pwd)/build-full/install" \
+              -DMC_ENABLE_WERROR=ON \
+              -DMC_ENABLE_TESTS=ON
 
-          ../configure \
-              --prefix="$(pwd)/install" \
-              --enable-mclib \
-              --enable-aspell \
-              --enable-werror
-
-          make -j$(nproc)
-          make check
-          make install
+          cmake --build build-full -j$(nproc)
+          ctest --test-dir build-full --output-on-failure
+          cmake --install build-full
 
       - name: Build ncurses configuration
         run: |
-          tar -xjf $(ls build-distrib/mc-*.tar.bz2) --one-top-level=build-ncurses
-          cd build-ncurses
+          cmake -S . -B build-ncurses \
+              -G Ninja \
+              -DCMAKE_INSTALL_PREFIX="$(pwd)/build-ncurses/install" \
+              -DMC_SCREEN_LIBRARY=ncurses \
+              -DMC_ENABLE_WERROR=ON \
+              -DMC_ENABLE_TESTS=ON
 
-          ../configure \
-              --prefix="$(pwd)/install" \
-              --with-screen=ncurses \
-              --enable-werror
-
-          make -j$(nproc)
-          make check
+          cmake --build build-ncurses -j$(nproc)
+          ctest --test-dir build-ncurses --output-on-failure
 
       - name: Build minimal configuration
         run: |
-          tar -xjf $(ls build-distrib/mc-*.tar.bz2) --one-top-level=build-minimal
-          cd build-minimal
+          cmake -S . -B build-minimal \
+              -G Ninja \
+              -DCMAKE_INSTALL_PREFIX="$(pwd)/build-minimal/install" \
+              -DMC_ENABLE_WERROR=ON \
+              -DMC_ENABLE_TESTS=ON \
+              -DMC_ENABLE_ASSERT=OFF \
+              -DMC_ENABLE_BACKGROUND=OFF \
+              -DMC_WITH_VFS=OFF \
+              -DMC_WITH_GPM=OFF \
+              -DMC_WITH_INTERNAL_EDIT=OFF \
+              -DMC_WITH_DIFF_VIEWER=OFF \
+              -DMC_ENABLE_SUBSHELL=OFF \
+              -DMC_MAINTAINER_MODE=OFF \
+              -DCMAKE_DISABLE_FIND_PACKAGE_X11=TRUE
 
-          ../configure \
-              --prefix="$(pwd)/install" \
-              --disable-shared \
-              --disable-static \
-              --disable-maintainer-mode \
-              --disable-largefile \
-              --disable-nls \
-              --disable-rpath \
-              --disable-mclib \
-              --disable-assert \
-              --disable-aspell \
-              --disable-background \
-              --disable-vfs \
-              --without-x \
-              --without-gpm-mouse \
-              --without-internal-edit \
-              --without-diff-viewer \
-              --without-subshell \
-              --enable-tests \
-              --enable-werror
-
-            make -j$(nproc)
-            make check
+          cmake --build build-minimal -j$(nproc)
+          ctest --test-dir build-minimal --output-on-failure
 
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: test-suite-logs-ubuntu
-          path: build-*/**/test-suite.log
-
+          path: build-*/**/*.log

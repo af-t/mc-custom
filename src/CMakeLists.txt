@@ -198,11 +198,17 @@ target_link_libraries(mc PRIVATE
     mc-filemanager-lib
     mc-viewer-lib
     mc-vfs-plugin-lib
-    mc-editor-lib
-    mc-diffviewer-lib
-    mc-subshell-lib
     libinternal
     libmc)
+if(MC_WITH_INTERNAL_EDIT)
+    target_link_libraries(mc PRIVATE mc-editor-lib)
+endif()
+if(MC_WITH_DIFF_VIEWER)
+    target_link_libraries(mc PRIVATE mc-diffviewer-lib)
+endif()
+if(MC_ENABLE_SUBSHELL)
+    target_link_libraries(mc PRIVATE mc-subshell-lib)
+endif()
 
 target_compile_definitions(mc PRIVATE
     SYSCONFDIR="${MC_SYSCONFDIR}"

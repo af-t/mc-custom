@@ -107,6 +107,7 @@
 #cmakedefine HAVE_SIGHANDLER_T 1
 #define SIZEOF_OFF_T @SIZEOF_OFF_T@
 #define SIZEOF_LONG @SIZEOF_LONG@
+#define SIZEOF_UINTMAX_T @SIZEOF_UINTMAX_T@
 
 /* file command */
 #cmakedefine USE_FILE_CMD 1
@@ -137,6 +138,7 @@
 #cmakedefine HAVE_FILE_CLONING_BY_PATH 1
 
 /* misc detection from source usage */
+#cmakedefine HAVE_DECL_ENVIRON 1
 #cmakedefine HAVE_POSIX_FALLOCATE 1
 #cmakedefine HAVE_QNX_KEYS 1
 

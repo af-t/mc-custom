@@ -20,7 +20,7 @@ jobs:
           release: "11.4-gcc"  # autoconf automake developer/gcc/gcc-c libtool pkg-config
           prepare: |
             pkg install --no-backup-be --no-refresh --accept -v \
-              cmake ninja pkgconf \
+              cmake ninja pkg-config \
               aspell check glib2 libssh2 libx11
 
           run: |

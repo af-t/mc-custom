@@ -80,6 +80,11 @@
 #include "xdirentry.h"
 #include "gc.h"  // vfs_rmstamp
 
+#include <dirent.h>
+#ifndef DT_UNKNOWN
+#define DT_UNKNOWN 0
+#endif
+
 /*** global variables ****************************************************************************/
 
 /*** file scope macro definitions ****************************************************************/

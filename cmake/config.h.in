@@ -88,19 +88,33 @@
 #cmakedefine HAVE_LINUX_FS_H 1
 
 /* struct members */
-#cmakedefine HAVE_STRUCT_DIRENT_D_TYPE 1
-#cmakedefine HAVE_STRUCT_STAT_ST_BLKSIZE 1
-#cmakedefine HAVE_STRUCT_STAT_ST_RDEV 1
-#cmakedefine HAVE_STRUCT_STAT_ST_MTIM 1
-#cmakedefine HAVE_STRUCT_STAT_ST_BLOCKS 1
-#cmakedefine HAVE_STRUCT_LINGER_L_LINGER 1
-#cmakedefine HAVE_STRUCT_FSSTAT_F_FSTYPENAME 1
-#cmakedefine HAVE_STRUCT_STATFS_F_FSTYPENAME 1
-#cmakedefine HAVE_STRUCT_STATVFS_F_BASETYPE 1
-#cmakedefine HAVE_INFOMOUNT 1
-#cmakedefine HAVE_INFOMOUNT_LIST 1
-#cmakedefine HAVE_INFOMOUNT_QNX 1
-#cmakedefine HAVE_S_SIMPLE_MSGS 1
+#cmakedefine HAVE_STRUCT_DIRENT_D_TYPE
+#cmakedefine HAVE_STRUCT_STAT_ST_BLKSIZE
+#cmakedefine HAVE_STRUCT_STAT_ST_RDEV
+#cmakedefine HAVE_STRUCT_STAT_ST_MTIM
+#cmakedefine HAVE_STRUCT_STAT_ST_MTIMESPEC
+#cmakedefine HAVE_STRUCT_STAT_ST_MTIMENSEC
+#cmakedefine HAVE_STRUCT_STAT_ST_BLOCKS
+#cmakedefine HAVE_STRUCT_LINGER_L_LINGER
+#cmakedefine HAVE_STRUCT_FSSTAT_F_FSTYPENAME
+#cmakedefine HAVE_STRUCT_STATFS_F_FSTYPENAME
+#cmakedefine HAVE_STRUCT_STATVFS_F_BASETYPE
+#cmakedefine HAVE_STRUCT_STATFS_F_TYPE
+#cmakedefine HAVE_STRUCT_STATVFS_F_TYPE
+#cmakedefine HAVE_STRUCT_STATVFS_F_FSTYPENAME
+#cmakedefine HAVE_INFOMOUNT
+#cmakedefine HAVE_INFOMOUNT_LIST
+#cmakedefine HAVE_INFOMOUNT_QNX
+#cmakedefine HAVE_S_SIMPLE_MSGS
+
+/* statfs/statvfs usage */
+#cmakedefine USE_STATVFS 1
+#cmakedefine STAT_STATVFS 1
+#cmakedefine STAT_STATVFS64 1
+#cmakedefine STAT_STATFS2_FRSIZE 1
+#cmakedefine STAT_STATFS2_BSIZE 1
+#cmakedefine STAT_STATFS2_FSIZE 1
+#cmakedefine STAT_STATFS4 1
 
 /* types / sizes */
 #cmakedefine HAVE_SOCKLEN_T 1
@@ -138,7 +152,7 @@
 #cmakedefine HAVE_FILE_CLONING_BY_PATH 1
 
 /* misc detection from source usage */
-#cmakedefine HAVE_DECL_ENVIRON 1
+#cmakedefine01 HAVE_DECL_ENVIRON
 #cmakedefine HAVE_POSIX_FALLOCATE 1
 #cmakedefine HAVE_QNX_KEYS 1
 

@@ -409,7 +409,7 @@ void
 vfs_get_timesbuf_from_stat (const struct stat *s, mc_timesbuf_t *times)
 {
 #ifdef HAVE_UTIMENSAT
-#ifdef HAVE_STRUCT_STAT_ST_MTIM
+#if defined(HAVE_STRUCT_STAT_ST_MTIM)
     /* POSIX IEEE Std 1003.1-2008 should be the preferred way
      *
      * AIX has internal type st_timespec_t conflicting with timespec, so assign per field, for
@@ -419,11 +419,11 @@ vfs_get_timesbuf_from_stat (const struct stat *s, mc_timesbuf_t *times)
     (*times)[0].tv_nsec = s->st_atim.tv_nsec;
     (*times)[1].tv_sec = s->st_mtim.tv_sec;
     (*times)[1].tv_nsec = s->st_mtim.tv_nsec;
-#elif HAVE_STRUCT_STAT_ST_MTIMESPEC
+#elif defined(HAVE_STRUCT_STAT_ST_MTIMESPEC)
     // Modern BSD solution
     (*times)[0] = s->st_atimespec;
     (*times)[1] = s->st_mtimespec;
-#elif HAVE_STRUCT_STAT_ST_MTIMENSEC
+#elif defined(HAVE_STRUCT_STAT_ST_MTIMENSEC)
     // Legacy BSD solution
     (*times)[0].tv_sec = s->st_atime;
     (*times)[0].tv_nsec = s->st_atimensec;
@@ -447,15 +447,15 @@ vfs_copy_stat_times (const struct stat *src, struct stat *dst)
     dst->st_mtime = src->st_mtime;
     dst->st_ctime = src->st_ctime;
 
-#ifdef HAVE_STRUCT_STAT_ST_MTIM
+#if defined(HAVE_STRUCT_STAT_ST_MTIM)
     dst->st_atim.tv_nsec = src->st_atim.tv_nsec;
     dst->st_mtim.tv_nsec = src->st_mtim.tv_nsec;
     dst->st_ctim.tv_nsec = src->st_ctim.tv_nsec;
-#elif HAVE_STRUCT_STAT_ST_MTIMESPEC
+#elif defined(HAVE_STRUCT_STAT_ST_MTIMESPEC)
     dst->st_atimespec.tv_nsec = src->st_atimespec.tv_nsec;
     dst->st_mtimespec.tv_nsec = src->st_mtimespec.tv_nsec;
     dst->st_ctimespec.tv_nsec = src->st_ctimespec.tv_nsec;
-#elif HAVE_STRUCT_STAT_ST_MTIMENSEC
+#elif defined(HAVE_STRUCT_STAT_ST_MTIMENSEC)
     dst->st_atimensec = src->st_atimensec;
     dst->st_mtimensec = src->st_mtimensec;
     dst->st_ctimensec = src->st_ctimensec;

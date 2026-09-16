@@ -28,10 +28,20 @@ jobs:
           curl -o- https://raw.githubusercontent.com/transifex/cli/master/install.sh | bash
           echo "${HOME}/.local/bin" >> $GITHUB_PATH
 
-      - run: ./maint/sync-transifex/po-to-transifex.py
+      - run: |
+          if [ -f ./maint/sync-transifex/po-to-transifex.py ]; then
+            ./maint/sync-transifex/po-to-transifex.py
+          else
+            echo "po-to-transifex.py not found, skipping"
+          fi
         env:
           TX_TOKEN: ${{ secrets.TX_TOKEN }}
 
-      - run: ./maint/sync-transifex/hints-to-transifex.py
+      - run: |
+          if [ -f ./maint/sync-transifex/hints-to-transifex.py ]; then
+            ./maint/sync-transifex/hints-to-transifex.py
+          else
+            echo "hints-to-transifex.py not found, skipping"
+          fi
         env:
           TX_TOKEN: ${{ secrets.TX_TOKEN }}

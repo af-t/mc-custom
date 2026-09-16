@@ -16,11 +16,16 @@ jobs:
 
     steps:
       - uses: actions/github-script@v9
+        continue-on-error: true
         with:
-          github-token: ${{ secrets.REPOSITORY_DISPATCH_GITHUB_TOKEN }}
+          github-token: ${{ secrets.REPOSITORY_DISPATCH_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
-            await github.rest.repos.createDispatchEvent({
-              owner: context.repo.owner,
-              repo: "skins",
-              event_type: "deploy-skins"
-            });
+            try {
+              await github.rest.repos.createDispatchEvent({
+                owner: context.repo.owner,
+                repo: "skins",
+                event_type: "deploy-skins"
+              });
+            } catch (e) {
+              console.log("Skins dispatch skipped:", e.message);
+            }

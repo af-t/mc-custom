@@ -25,7 +25,7 @@ jobs:
         with:
           prepare: |
             pkg install -y cmake ninja pkgconf
-            pkg install -y aspell check glib libssh2 libX11 python3
+            pkg install -y aspell check glib libssh2 libX11 ncurses python3
 
           run: |
             pw useradd test -d "$(pwd)"

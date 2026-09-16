@@ -188,10 +188,30 @@ if(MC_SCREEN_LIBRARY STREQUAL "slang")
 endif()
 
 if(NOT MC_USE_SLANG)
-    find_path(NCURSESW_INCLUDE_DIR ncursesw/ncurses.h)
-    find_library(NCURSESW_LIBRARY NAMES ncursesw ncurses)
-    if(NCURSESW_INCLUDE_DIR AND NCURSESW_LIBRARY)
+    pkg_check_modules(NCURSES_QUIET IMPORTED_TARGET ncursesw)
+    if(NCURSES_QUIET_FOUND)
+        set(NCURSESW_INCLUDE_DIR ${NCURSES_QUIET_INCLUDE_DIRS})
+        set(NCURSESW_LIBRARY ${NCURSES_QUIET_LINK_LIBRARIES})
         set(MC_USE_NCURSES ON)
+    else()
+        pkg_check_modules(NCURSES_FALLBACK QUIET IMPORTED_TARGET ncurses)
+        if(NCURSES_FALLBACK_FOUND)
+            set(NCURSESW_INCLUDE_DIR ${NCURSES_FALLBACK_INCLUDE_DIRS})
+            set(NCURSESW_LIBRARY ${NCURSES_FALLBACK_LINK_LIBRARIES})
+            set(MC_USE_NCURSES ON)
+        else()
+            find_path(NCURSESW_INCLUDE_DIR ncursesw/ncurses.h)
+            if(NOT NCURSESW_INCLUDE_DIR)
+                find_path(NCURSESW_INCLUDE_DIR ncurses.h)
+            endif()
+            if(NOT NCURSESW_INCLUDE_DIR)
+                find_path(NCURSESW_INCLUDE_DIR ncurses/ncurses.h)
+            endif()
+            find_library(NCURSESW_LIBRARY NAMES ncursesw ncurses)
+            if(NCURSESW_INCLUDE_DIR AND NCURSESW_LIBRARY)
+                set(MC_USE_NCURSES ON)
+            endif()
+        endif()
     endif()
     find_library(TINFOW_LIBRARY NAMES tinfow tinfo)
 endif()
@@ -226,9 +246,11 @@ endif()
 find_package(X11 QUIET)
 set(MC_HAVE_TEXTMODE_X11_SUPPORT OFF)
 set(MC_X11_LIBRARIES)
+set(MC_X11_INCLUDE_DIR)
 if(X11_FOUND)
     set(MC_HAVE_TEXTMODE_X11_SUPPORT ON)
     set(MC_X11_LIBRARIES ${X11_LIBRARIES})
+    set(MC_X11_INCLUDE_DIR ${X11_INCLUDE_DIR})
 endif()
 
 # ---------------------------------------------------------------------------
@@ -260,6 +282,18 @@ set(HAVE_SYS_FS_S5PARAM_H 0)
 set(HAVE_SYS_MNTENT_H 0)
 # stropts.h is System V only, not on Linux/glibc.
 set(HAVE_STROPTS_H 0)
+# sys/vfs.h is Linux-specific; not present on BSD/Solaris/macOS
+if(NOT CMAKE_SYSTEM_NAME MATCHES "Linux")
+    set(HAVE_SYS_VFS_H 0)
+endif()
+if(CMAKE_SYSTEM_NAME MATCHES "FreeBSD|Darwin|SunOS")
+    set(HAVE_SYS_STATFS_H 0)
+endif()
+if(CMAKE_SYSTEM_NAME MATCHES "SunOS")
+    set(HAVE_SYS_STATVFS_H 1)
+    set(STAT_STATVFS 1)
+    set(USE_STATVFS 1)
+endif()
 
 set(HAVE_STRUCT_DIRENT_D_TYPE 0)
 check_c_source_compiles([=[
@@ -274,10 +308,14 @@ endif()
 set(HAVE_STRUCT_STAT_ST_BLKSIZE 0)
 set(HAVE_STRUCT_STAT_ST_RDEV 0)
 set(HAVE_STRUCT_STAT_ST_MTIM 0)
+set(HAVE_STRUCT_STAT_ST_MTIMESPEC 0)
+set(HAVE_STRUCT_STAT_ST_MTIMENSEC 0)
 set(HAVE_STRUCT_STAT_ST_BLOCKS 0)
 check_struct_has_member("struct stat" st_blksize sys/stat.h _mc_st_blksize)
 check_struct_has_member("struct stat" st_rdev sys/stat.h _mc_st_rdev)
 check_struct_has_member("struct stat" st_mtim sys/stat.h _mc_st_mtim)
+check_struct_has_member("struct stat" st_mtimespec sys/stat.h _mc_st_mtimespec)
+check_struct_has_member("struct stat" st_mtimensec sys/stat.h _mc_st_mtimensec)
 check_struct_has_member("struct stat" st_blocks sys/stat.h _mc_st_blocks)
 if(_mc_st_blksize)
     set(HAVE_STRUCT_STAT_ST_BLKSIZE 1)
@@ -287,6 +325,12 @@ if(_mc_st_rdev)
 endif()
 if(_mc_st_mtim)
     set(HAVE_STRUCT_STAT_ST_MTIM 1)
+endif()
+if(_mc_st_mtimespec)
+    set(HAVE_STRUCT_STAT_ST_MTIMESPEC 1)
+endif()
+if(_mc_st_mtimensec)
+    set(HAVE_STRUCT_STAT_ST_MTIMENSEC 1)
 endif()
 if(_mc_st_blocks)
     set(HAVE_STRUCT_STAT_ST_BLOCKS 1)
@@ -301,16 +345,26 @@ endif()
 
 set(HAVE_STRUCT_FSSTAT_F_FSTYPENAME 0)
 set(HAVE_STRUCT_STATFS_F_FSTYPENAME 0)
+set(HAVE_STRUCT_STATFS_F_TYPE 0)
+set(HAVE_STRUCT_STATVFS_F_FSTYPENAME 0)
+set(HAVE_STRUCT_STATVFS_F_TYPE 0)
 set(HAVE_STRUCT_STATVFS_F_BASETYPE 0)
 set(HAVE_INFOMOUNT 0)
 set(HAVE_INFOMOUNT_LIST 0)
 set(HAVE_INFOMOUNT_QNX 0)
 set(HAVE_S_SIMPLE_MSGS 0)
-foreach(_n stat.statfs sys/statfs.h statfs sys/vfs.h statvfs sys/statvfs.h)
-endforeach()
 
 check_c_source_compiles([=[
+#include <sys/types.h>
+#ifdef HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif
+#ifdef HAVE_SYS_MOUNT_H
+#include <sys/mount.h>
+#endif
+#ifdef HAVE_SYS_VFS_H
 #include <sys/vfs.h>
+#endif
 int main(void){struct statfs s; (void)s.f_fstypename; return 0;}
 ]=] _mc_fstypename_statfs)
 if(_mc_fstypename_statfs)
@@ -318,7 +372,46 @@ if(_mc_fstypename_statfs)
 endif()
 
 check_c_source_compiles([=[
-#include <sys/stat.h>
+#include <sys/types.h>
+#ifdef HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif
+#ifdef HAVE_SYS_MOUNT_H
+#include <sys/mount.h>
+#endif
+#ifdef HAVE_SYS_VFS_H
+#include <sys/vfs.h>
+#endif
+int main(void){struct statfs s; (void)s.f_type; return 0;}
+]=] _mc_ftype_statfs)
+if(_mc_ftype_statfs)
+    set(HAVE_STRUCT_STATFS_F_TYPE 1)
+endif()
+
+check_c_source_compiles([=[
+#include <sys/types.h>
+#ifdef HAVE_SYS_STATVFS_H
+#include <sys/statvfs.h>
+#endif
+int main(void){struct statvfs s; (void)s.f_fstypename; return 0;}
+]=] _mc_fstypename_statvfs)
+if(_mc_fstypename_statvfs)
+    set(HAVE_STRUCT_STATVFS_F_FSTYPENAME 1)
+endif()
+
+check_c_source_compiles([=[
+#include <sys/types.h>
+#ifdef HAVE_SYS_STATVFS_H
+#include <sys/statvfs.h>
+#endif
+int main(void){struct statvfs s; (void)s.f_type; return 0;}
+]=] _mc_ftype_statvfs)
+if(_mc_ftype_statvfs)
+    set(HAVE_STRUCT_STATVFS_F_TYPE 1)
+endif()
+
+check_c_source_compiles([=[
+#include <sys/types.h>
 #ifdef HAVE_SYS_STATVFS_H
 #include <sys/statvfs.h>
 #endif
@@ -484,6 +577,15 @@ set(HAVE_STDCKDINT_H 0)
 check_include_file("stdckdint.h" _mc_stdckdint)
 if(_mc_stdckdint)
     set(HAVE_STDCKDINT_H 1)
+endif()
+if(NOT HAVE_STDCKDINT_H)
+    file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+    file(WRITE "${CMAKE_BINARY_DIR}/lib/stdckdint.h"
+        "#ifndef _GL_STDCKDINT_H\n#define _GL_STDCKDINT_H\n#include <stdbool.h>\n#include \"lib/intprops-internal.h\"\n"
+        "#define ckd_add(r, a, b) ((bool) _GL_INT_ADD_WRAPV (a, b, r))\n"
+        "#define ckd_sub(r, a, b) ((bool) _GL_INT_SUBTRACT_WRAPV (a, b, r))\n"
+        "#define ckd_mul(r, a, b) ((bool) _GL_INT_MULTIPLY_WRAPV (a, b, r))\n"
+        "#endif\n")
 endif()
 
 # Check whether environ is declared (mirrors AC_CHECK_DECLS([environ]))
@@ -757,10 +859,20 @@ endif()
 
 add_library(mc-deps INTERFACE)
 target_link_libraries(mc-deps INTERFACE mc-version PkgConfig::GLIB)
+if(MC_USE_SLANG)
+    if(SLANG_FOUND)
+        target_link_libraries(mc-deps INTERFACE PkgConfig::SLANG)
+    endif()
+endif()
 if(NOT MC_USE_SLANG)
-    target_link_libraries(mc-deps INTERFACE
-        ${NCURSESW_LIBRARY}
-        ${TINFOW_LIBRARY})
+    if(TINFOW_LIBRARY AND NOT TINFOW_LIBRARY MATCHES "NOTFOUND")
+        target_link_libraries(mc-deps INTERFACE
+            ${NCURSESW_LIBRARY}
+            ${TINFOW_LIBRARY})
+    else()
+        target_link_libraries(mc-deps INTERFACE
+            ${NCURSESW_LIBRARY})
+    endif()
     if(NCURSESW_INCLUDE_DIR)
         target_include_directories(mc-deps INTERFACE ${NCURSESW_INCLUDE_DIR})
     endif()
@@ -770,6 +882,9 @@ if(MC_GPM_LIBRARY)
 endif()
 if(MC_X11_LIBRARIES)
     target_link_libraries(mc-deps INTERFACE ${MC_X11_LIBRARIES})
+    if(MC_X11_INCLUDE_DIR)
+        target_include_directories(mc-deps INTERFACE ${MC_X11_INCLUDE_DIR})
+    endif()
 endif()
 if(GMODULE_FOUND)
     target_link_libraries(mc-deps INTERFACE PkgConfig::GMODULE)

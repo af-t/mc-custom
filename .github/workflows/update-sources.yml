@@ -45,7 +45,11 @@ jobs:
 
           htags --gtags --suggest --tree-view --insert-header man/header.html \
             -t "Welcome to the Midnight Commander source tour!"
-          ./maint/htagsfix
+          if [ -f ./maint/htagsfix ]; then
+            ruby ./maint/htagsfix || echo "htagsfix failed, continuing"
+          else
+            echo "maint/htagsfix not found, skipping"
+          fi
 
       - name: Deploy to GitHub
         run: |

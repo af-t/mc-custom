@@ -15,6 +15,7 @@ add_custom_command(
     VERBATIM)
 
 add_custom_target(hlp ALL DEPENDS "${_hlp_out}")
+add_dependencies(hlp man-pages)
 
 install(FILES "${_hlp_out}"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/${MC_PACKAGE}/help")
@@ -35,6 +36,7 @@ foreach(_lang ${_hlp_linguas})
                 COMMENT "Generating mc.hlp.${_lang} via man2hlp"
                 VERBATIM)
             add_custom_target(hlp-${_lang} ALL DEPENDS "${_hlp_lang_out}")
+            add_dependencies(hlp-${_lang} man-page-${_lang})
             add_dependencies(hlp hlp-${_lang})
             install(FILES "${_hlp_lang_out}"
                 DESTINATION "${CMAKE_INSTALL_DATADIR}/${MC_PACKAGE}/help"

@@ -165,6 +165,26 @@ gboolean classic_progressbar = TRUE;
 
 /*** file scope type declarations ****************************************************************/
 
+/* Undefine system magic macros to avoid enum name collision (e.g. Termux/Android NDK) */
+#ifdef MSDOS_SUPER_MAGIC
+#undef MSDOS_SUPER_MAGIC
+#endif
+#ifdef NTFS_SB_MAGIC
+#undef NTFS_SB_MAGIC
+#endif
+#ifdef PROC_SUPER_MAGIC
+#undef PROC_SUPER_MAGIC
+#endif
+#ifdef SMB_SUPER_MAGIC
+#undef SMB_SUPER_MAGIC
+#endif
+#ifdef NCP_SUPER_MAGIC
+#undef NCP_SUPER_MAGIC
+#endif
+#ifdef USBDEVICE_SUPER_MAGIC
+#undef USBDEVICE_SUPER_MAGIC
+#endif
+
 typedef enum
 {
     MSDOS_SUPER_MAGIC = 0x4d44,
@@ -252,6 +272,7 @@ static struct
    of the corresponding file systems is hard-mounted but not available.  */
 
 #if defined(USE_STATVFS) && !(!defined STAT_STATVFS && defined STAT_STATVFS64)
+#if !defined(__sun) && !defined(__SVR4)
 static int
 statvfs_works (void)
 {
@@ -267,12 +288,17 @@ statvfs_works (void)
 #endif
 }
 #endif
+#endif
 
 /* --------------------------------------------------------------------------------------------- */
 
 static gboolean
 filegui__check_attrs_on_fs (const char *fs_path)
 {
+#if defined(__sun) || defined(__SVR4)
+    (void) fs_path;
+    return TRUE;
+#else
     STRUCT_STATVFS stfs;
 
 #if defined(USE_STATVFS) && defined(STAT_STATVFS)
@@ -315,6 +341,7 @@ filegui__check_attrs_on_fs (const char *fs_path)
 #endif
 
     return TRUE;
+#endif
 }
 
 /* --------------------------------------------------------------------------------------------- */

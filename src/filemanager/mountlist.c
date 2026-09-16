@@ -352,7 +352,7 @@ static GSList *mc_mount_list = NULL;
    with GNU libc on Linux kernels before 2.6.36, which stats all
    preceding entries in /proc/mounts; that makes df hang if even one
    of the corresponding file systems is hard-mounted but not available.  */
-static int
+static int __attribute__ ((unused))
 statvfs_works (void)
 {
 #if !(defined __linux__ && (defined __GLIBC__ || defined __UCLIBC__))
